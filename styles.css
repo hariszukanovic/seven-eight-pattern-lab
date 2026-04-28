@@ -280,6 +280,22 @@ textarea {
   line-height: 1.45;
 }
 
+.resultUrl {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.resultUrl a {
+  color: var(--ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
 @media (max-width: 760px) {
   .app {
     width: calc(100vw - 20px);
@@ -292,5 +308,9 @@ textarea {
 
   .grid {
     grid-template-columns: 74px repeat(var(--steps-per-bar, 14), 36px);
+  }
+
+  .resultUrl {
+    justify-content: flex-start;
   }
 }
