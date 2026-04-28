@@ -1,0 +1,53 @@
+{
+  "id": "money-originalish-7-pulse-v7-loose-halftime",
+  "name": "Money original-ish 7-pulse - loose half-time",
+  "bpm": 124,
+  "beats": 7,
+  "beatUnit": 8,
+  "subdivisions": 2,
+  "ticksPerQuarter": 480,
+  "swing": 0.11,
+  "groove": {
+    "snareLagSteps": 0.08,
+    "hatLooseSteps": 0.055,
+    "kickLooseSteps": 0.018,
+    "cymbalLooseSteps": 0.018,
+    "turnaroundPushSteps": -0.025,
+    "velocityHumanize": 0.045
+  },
+  "notes": {
+    "kick": 36,
+    "snare": 38,
+    "hat": 42,
+    "cymbal": 49
+  },
+  "breathSteps": [],
+  "bars": [
+    {
+      "name": "A - half-time from original frame",
+      "tracks": {
+        "kick": [
+          { "step": 0, "velocity": 0.95 },
+          { "step": 4, "velocity": 0.68 },
+          { "step": 8, "velocity": 0.72 },
+          { "step": 12, "velocity": 0.9 }
+        ],
+        "snare": [
+          { "step": 2, "velocity": 0.24 },
+          { "step": 6, "velocity": 0.92 },
+          { "step": 10, "velocity": 0.3 }
+        ],
+        "hat": [
+          { "step": 3, "velocity": 0.15 },
+          { "step": 5, "velocity": 0.1 },
+          { "step": 9, "velocity": 0.14 },
+          { "step": 13, "velocity": 0.2 }
+        ],
+        "cymbal": [
+          { "step": 0, "velocity": 0.78 },
+          { "step": 12, "velocity": 0.96 }
+        ]
+      }
+    }
+  ]
+}

@@ -1,13 +1,21 @@
 window.PatternArchive = {
   current: {
-    id: "money-originalish-7-pulse-v6-halftime-one-bar",
-    name: "Money original-ish 7-pulse - half-time one bar",
+    id: "money-originalish-7-pulse-v7-loose-halftime",
+    name: "Money original-ish 7-pulse - loose half-time",
     bpm: 124,
     beats: 7,
     beatUnit: 8,
     subdivisions: 2,
     ticksPerQuarter: 480,
-    swing: 0,
+    swing: 0.11,
+    groove: {
+      snareLagSteps: 0.08,
+      hatLooseSteps: 0.055,
+      kickLooseSteps: 0.018,
+      cymbalLooseSteps: 0.018,
+      turnaroundPushSteps: -0.025,
+      velocityHumanize: 0.045
+    },
     notes: {
       kick: 36,
       snare: 38,

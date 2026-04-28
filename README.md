@@ -7,6 +7,8 @@ The musical material lives in `patterns.js`. For most future changes, edit:
 - `bpm`
 - `beatUnit`
 - `subdivisions`
+- `swing`
+- `groove`
 - `breathSteps`
 - `bars[].tracks.kick`
 - `bars[].tracks.snare`
@@ -16,6 +18,7 @@ The musical material lives in `patterns.js`. For most future changes, edit:
 
 The current pattern uses a true 7/8 bar: 7 eighth-note pulses, each split into two 16ths.
 `bpm` is the eighth-note pulse tempo for this pattern.
+`swing` delays the off-16ths by a fraction of one step. `groove` adds small Money-ish timing offsets: snare slightly late, hats loose, kicks/cymbals mostly anchored, plus tiny velocity movement.
 
 ```text
 0  = 1

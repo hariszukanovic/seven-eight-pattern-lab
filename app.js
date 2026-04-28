@@ -31,6 +31,7 @@
   let nextNoteTime = 0;
   let nextStep = 0;
   let nextBar = 0;
+  let nextCycle = 0;
   let stepCells = [];
   let midiAccess = null;
   let selectedMidiOutput = null;
@@ -86,6 +87,49 @@
     if (track === "hat") return 0.26;
     if (track === "cymbal") return 0.72;
     return 0.75;
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function stableNoise(track, barIndex, step, cycle, salt) {
+    const key = track + ":" + barIndex + ":" + step + ":" + cycle + ":" + salt;
+    let hash = 2166136261;
+    for (let i = 0; i < key.length; i += 1) {
+      hash ^= key.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return ((hash >>> 0) / 4294967295) * 2 - 1;
+  }
+
+  function grooveValue(p, key, fallback) {
+    return p.groove && Number.isFinite(p.groove[key]) ? p.groove[key] : fallback;
+  }
+
+  function grooveOffsetSteps(track, event, p, barIndex, cycle) {
+    let offset = event.step % p.subdivisions === 1 ? (p.swing || 0) : 0;
+
+    if (track === "snare") {
+      offset += grooveValue(p, "snareLagSteps", 0);
+    } else if (track === "hat") {
+      offset += stableNoise(track, barIndex, event.step, cycle, "hat-time") * grooveValue(p, "hatLooseSteps", 0);
+    } else if (track === "kick") {
+      offset += stableNoise(track, barIndex, event.step, cycle, "kick-time") * grooveValue(p, "kickLooseSteps", 0);
+    } else if (track === "cymbal") {
+      if (event.step >= stepsPerBar(p) - p.subdivisions) {
+        offset += grooveValue(p, "turnaroundPushSteps", 0);
+      }
+      offset += stableNoise(track, barIndex, event.step, cycle, "cymbal-time") * grooveValue(p, "cymbalLooseSteps", 0);
+    }
+
+    return clamp(offset, -0.2, 0.35);
+  }
+
+  function groovedVelocity(track, event, p, barIndex, cycle) {
+    const amount = grooveValue(p, "velocityHumanize", 0);
+    const trackAmount = track === "hat" ? amount * 1.45 : track === "snare" ? amount * 0.75 : amount;
+    return clamp(event.velocity + stableNoise(track, barIndex, event.step, cycle, "velocity") * trackAmount, 0.02, 1);
   }
 
   function generatedSparseHatEvents(p) {
@@ -404,12 +448,16 @@
     }, delay);
   }
 
-  function scheduleStep(barIndex, stepIndex, time) {
+  function scheduleStep(barIndex, stepIndex, time, cycle) {
     const bar = pattern.bars[barIndex % pattern.bars.length];
     tracks.forEach((track) => {
       eventsForTrack(bar, track, pattern)
         .filter((event) => event.step === stepIndex)
-        .forEach((event) => scheduleEvent(track, time, event.velocity));
+        .forEach((event) => {
+          const eventTime = time + grooveOffsetSteps(track, event, pattern, barIndex, cycle) * secondsPerStep(pattern);
+          const velocity = groovedVelocity(track, event, pattern, barIndex, cycle);
+          scheduleEvent(track, eventTime, velocity);
+        });
     });
     showStep(barIndex % pattern.bars.length, stepIndex, time);
   }
@@ -420,12 +468,13 @@
     if (nextStep >= stepsPerBar(pattern)) {
       nextStep = 0;
       nextBar = (nextBar + 1) % pattern.bars.length;
+      if (nextBar === 0) nextCycle += 1;
     }
   }
 
   function tickScheduler() {
     while (nextNoteTime < ctx.currentTime + 0.12) {
-      scheduleStep(nextBar, nextStep, nextNoteTime);
+      scheduleStep(nextBar, nextStep, nextNoteTime, nextCycle);
       advanceStep();
     }
   }
@@ -439,6 +488,7 @@
     playing = true;
     nextStep = 0;
     nextBar = 0;
+    nextCycle = 0;
     nextNoteTime = ctx.currentTime + 0.08;
     scheduler = window.setInterval(tickScheduler, 25);
     setStatus("Playing " + pattern.name);
@@ -554,9 +604,10 @@
         const note = pattern.notes[track];
         if (!note) return;
         eventsForTrack(bar, track, pattern).forEach((event) => {
-          const start = barStart + event.step * stepTicks;
+          const offset = grooveOffsetSteps(track, event, pattern, repeat % pattern.bars.length, repeat);
+          const start = Math.max(0, barStart + (event.step + offset) * stepTicks);
           const dur = track === "hat" ? stepTicks * 0.45 : track === "cymbal" ? stepTicks * 3 : stepTicks * 0.9;
-          const velocity = Math.max(1, Math.min(127, Math.round(event.velocity * 127)));
+          const velocity = Math.max(1, Math.min(127, Math.round(groovedVelocity(track, event, pattern, repeat % pattern.bars.length, repeat) * 127)));
           events.push({ tick: start, bytes: [0x99, note, velocity] });
           events.push({ tick: start + dur, bytes: [0x89, note, 0] });
         });
