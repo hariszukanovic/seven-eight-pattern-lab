@@ -46,4 +46,6 @@ Good versions can be kept in two ways:
 - Use `Save Version` in the app. This stores versions in the browser's local storage.
 - Use `Download JSON` and place the downloaded file in `archive/`.
 
+Click any kick, snare, or hat cell in the grid to toggle that note on or off. The JSON editor updates immediately.
+
 `Export MIDI` creates a General MIDI drum file using channel 10.

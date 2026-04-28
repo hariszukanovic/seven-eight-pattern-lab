@@ -80,6 +80,13 @@
     return Math.round(v * 100);
   }
 
+  function defaultVelocity(track) {
+    if (track === "kick") return 0.82;
+    if (track === "snare") return 0.86;
+    if (track === "hat") return 0.26;
+    return 0.75;
+  }
+
   function generatedSparseHatEvents(p) {
     const breath = new Set(p.breathSteps || []);
     const steps = [
@@ -98,6 +105,34 @@
     if (value === "generated-sparse-3s" && track === "hat") return generatedSparseHatEvents(p);
     if (value === "generated-3s" && track === "hat") return generatedSparseHatEvents(p);
     return Array.isArray(value) ? value : [];
+  }
+
+  function editableEventsForTrack(bar, track) {
+    if (!bar.tracks) bar.tracks = {};
+    if (!Array.isArray(bar.tracks[track])) {
+      bar.tracks[track] = eventsForTrack(bar, track, pattern).map((event) => ({ ...event }));
+    }
+    return bar.tracks[track];
+  }
+
+  function toggleEvent(barIndex, track, step) {
+    const bar = pattern.bars[barIndex];
+    if (!bar || !track) return;
+    const events = editableEventsForTrack(bar, track);
+    const existingIndex = events.findIndex((event) => event.step === step);
+
+    if (existingIndex >= 0) {
+      events.splice(existingIndex, 1);
+      setStatus("Removed " + track + " at " + labelsFor(pattern)[step] + ".");
+    } else {
+      events.push({ step, velocity: defaultVelocity(track) });
+      events.sort((a, b) => a.step - b.step);
+      setStatus("Added " + track + " at " + labelsFor(pattern)[step] + ".");
+    }
+
+    stop();
+    renderEditor();
+    renderGrid();
   }
 
   function renderEditor() {
@@ -168,6 +203,7 @@
 
           cell.dataset.bar = String(barIndex);
           cell.dataset.step = String(i);
+          cell.dataset.track = track;
           els.grid.appendChild(cell);
         }
       });
@@ -545,6 +581,11 @@
   els.play.addEventListener("click", start);
   els.stop.addEventListener("click", stop);
   els.exportMidi.addEventListener("click", exportMidi);
+  els.grid.addEventListener("click", (event) => {
+    const cell = event.target.closest("[data-track][data-step]");
+    if (!cell || !els.grid.contains(cell)) return;
+    toggleEvent(Number(cell.dataset.bar), cell.dataset.track, Number(cell.dataset.step));
+  });
   els.refreshMidi.addEventListener("click", refreshMidiOutputs);
   els.midiOutput.addEventListener("change", () => {
     if (!midiAccess) return;
