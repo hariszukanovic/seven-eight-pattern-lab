@@ -17,9 +17,6 @@
     archiveSelect: $("archiveSelect"),
     saveVersion: $("saveVersionBtn"),
     downloadPattern: $("downloadPatternBtn"),
-    format: $("formatBtn"),
-    apply: $("applyBtn"),
-    editor: $("patternEditor"),
     status: $("status"),
     grid: $("grid")
   };
@@ -135,7 +132,7 @@
     }
 
     normalizePlaybackCursor();
-    renderEditor();
+    syncControls();
     renderGrid();
   }
 
@@ -158,7 +155,7 @@
     };
     pattern.bars.push(renamedBarCopy(source, pattern.bars.length + 1));
     normalizePlaybackCursor();
-    renderEditor();
+    syncControls();
     renderGrid();
     setStatus("Added bar " + pattern.bars.length + " by duplicating the previous bar.");
   }
@@ -170,13 +167,12 @@
     }
     const removed = pattern.bars.pop();
     normalizePlaybackCursor();
-    renderEditor();
+    syncControls();
     renderGrid();
     setStatus("Removed " + removed.name + ".");
   }
 
-  function renderEditor() {
-    els.editor.value = JSON.stringify(pattern, null, 2);
+  function syncControls() {
     els.bpm.value = pattern.bpm;
   }
 
@@ -485,23 +481,9 @@
     if (!entry) return;
     pattern = clone(entry.pattern);
     normalizePlaybackCursor();
-    renderEditor();
+    syncControls();
     renderGrid();
     setStatus("Loaded archive version: " + entry.name);
-  }
-
-  function applyPatternFromEditor() {
-    try {
-      const next = JSON.parse(els.editor.value);
-      validatePattern(next);
-      pattern = next;
-      normalizePlaybackCursor();
-      renderEditor();
-      renderGrid();
-      setStatus("Pattern applied.");
-    } catch (error) {
-      setStatus(error.message, true);
-    }
   }
 
   function validatePattern(p) {
@@ -669,15 +651,6 @@
   });
   els.saveVersion.addEventListener("click", saveVersion);
   els.downloadPattern.addEventListener("click", downloadPattern);
-  els.format.addEventListener("click", () => {
-    try {
-      els.editor.value = JSON.stringify(JSON.parse(els.editor.value), null, 2);
-      setStatus("Formatted JSON.");
-    } catch (error) {
-      setStatus(error.message, true);
-    }
-  });
-  els.apply.addEventListener("click", applyPatternFromEditor);
   els.archiveSelect.addEventListener("change", (event) => {
     if (event.target.value !== "") loadVersion(Number(event.target.value));
   });
@@ -686,11 +659,11 @@
   });
   els.bpm.addEventListener("change", () => {
     pattern.bpm = Number(els.bpm.value) || pattern.bpm;
-    renderEditor();
+    syncControls();
   });
 
   renderArchiveSelect();
-  renderEditor();
+  syncControls();
   renderGrid();
-  setStatus("Ready. Edit the JSON, apply changes, then save good versions to the archive.");
+  setStatus("Ready. Click grid cells while it plays, then save good versions to the archive.");
 })();

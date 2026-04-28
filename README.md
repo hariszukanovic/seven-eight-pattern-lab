@@ -45,9 +45,9 @@ Web MIDI note playback requires a MIDI output device or virtual synth exposed by
 Good versions can be kept in two ways:
 
 - Use `Save Version` in the app. This stores versions in the browser's local storage.
-- Use `Download JSON` and place the downloaded file in `archive/`.
+- Use `Download Version` and place the downloaded file in `archive/`.
 
-Click any kick, snare, hat, or cymbal cell in the grid to toggle that note on or off. The JSON editor updates immediately, and playback keeps running while you edit.
+Click any kick, snare, hat, or cymbal cell in the grid to toggle that note on or off. Playback keeps running while you edit.
 Use `Add Bar` to duplicate the last bar and start shaping a variation. Use `Remove Bar` to drop the last bar; the app always keeps at least one bar.
 
 `Export MIDI` creates a General MIDI drum file using channel 10.
