@@ -8,6 +8,8 @@
     exportMidi: $("exportMidiBtn"),
     bpm: $("bpmInput"),
     loopBars: $("loopBarsInput"),
+    addBar: $("addBarBtn"),
+    removeBar: $("removeBarBtn"),
     master: $("masterInput"),
     soundMode: $("soundModeSelect"),
     midiOutput: $("midiOutputSelect"),
@@ -135,6 +137,36 @@
     stop();
     renderEditor();
     renderGrid();
+  }
+
+  function renamedBarCopy(bar, number) {
+    const copy = clone(bar);
+    copy.name = "Bar " + number + " variation";
+    return copy;
+  }
+
+  function addBar() {
+    stop();
+    const source = pattern.bars[pattern.bars.length - 1] || {
+      name: "Bar 1",
+      tracks: Object.fromEntries(tracks.map((track) => [track, []]))
+    };
+    pattern.bars.push(renamedBarCopy(source, pattern.bars.length + 1));
+    renderEditor();
+    renderGrid();
+    setStatus("Added bar " + pattern.bars.length + " by duplicating the previous bar.");
+  }
+
+  function removeBar() {
+    if (pattern.bars.length <= 1) {
+      setStatus("Keep at least one bar.", true);
+      return;
+    }
+    stop();
+    const removed = pattern.bars.pop();
+    renderEditor();
+    renderGrid();
+    setStatus("Removed " + removed.name + ".");
   }
 
   function renderEditor() {
@@ -611,6 +643,8 @@
   els.play.addEventListener("click", start);
   els.stop.addEventListener("click", stop);
   els.exportMidi.addEventListener("click", exportMidi);
+  els.addBar.addEventListener("click", addBar);
+  els.removeBar.addEventListener("click", removeBar);
   els.grid.addEventListener("click", (event) => {
     const cell = event.target.closest("[data-track][data-step]");
     if (!cell || !els.grid.contains(cell)) return;
