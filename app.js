@@ -134,9 +134,15 @@
       setStatus("Added " + track + " at " + labelsFor(pattern)[step] + ".");
     }
 
-    stop();
+    normalizePlaybackCursor();
     renderEditor();
     renderGrid();
+  }
+
+  function normalizePlaybackCursor() {
+    if (!playing || !pattern.bars.length) return;
+    nextBar %= pattern.bars.length;
+    nextStep %= stepsPerBar(pattern);
   }
 
   function renamedBarCopy(bar, number) {
@@ -146,12 +152,12 @@
   }
 
   function addBar() {
-    stop();
     const source = pattern.bars[pattern.bars.length - 1] || {
       name: "Bar 1",
       tracks: Object.fromEntries(tracks.map((track) => [track, []]))
     };
     pattern.bars.push(renamedBarCopy(source, pattern.bars.length + 1));
+    normalizePlaybackCursor();
     renderEditor();
     renderGrid();
     setStatus("Added bar " + pattern.bars.length + " by duplicating the previous bar.");
@@ -162,8 +168,8 @@
       setStatus("Keep at least one bar.", true);
       return;
     }
-    stop();
     const removed = pattern.bars.pop();
+    normalizePlaybackCursor();
     renderEditor();
     renderGrid();
     setStatus("Removed " + removed.name + ".");
@@ -477,8 +483,8 @@
     const entries = readArchive();
     const entry = entries[index];
     if (!entry) return;
-    stop();
     pattern = clone(entry.pattern);
+    normalizePlaybackCursor();
     renderEditor();
     renderGrid();
     setStatus("Loaded archive version: " + entry.name);
@@ -488,8 +494,8 @@
     try {
       const next = JSON.parse(els.editor.value);
       validatePattern(next);
-      stop();
       pattern = next;
+      normalizePlaybackCursor();
       renderEditor();
       renderGrid();
       setStatus("Pattern applied.");
