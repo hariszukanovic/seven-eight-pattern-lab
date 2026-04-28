@@ -23,6 +23,7 @@
   };
 
   const archiveKey = "sevenEightPatternArchive";
+  const tracks = ["kick", "snare", "hat", "cymbal"];
   let pattern = clone(window.PatternArchive.current);
   let ctx = null;
   let masterGain = null;
@@ -84,6 +85,7 @@
     if (track === "kick") return 0.82;
     if (track === "snare") return 0.86;
     if (track === "hat") return 0.26;
+    if (track === "cymbal") return 0.72;
     return 0.75;
   }
 
@@ -176,7 +178,7 @@
       barLabel.textContent = "Bar " + (barIndex + 1) + ": " + bar.name;
       els.grid.appendChild(barLabel);
 
-      ["kick", "snare", "hat"].forEach((track) => {
+      tracks.forEach((track) => {
         const rowLabel = document.createElement("div");
         rowLabel.className = "cell rowLabel";
         rowLabel.textContent = track;
@@ -195,8 +197,8 @@
           if (event) {
             cell.classList.add("event", track);
             cell.dataset.vel = velocityText(event.velocity);
-            cell.textContent = track === "kick" ? "K" : track === "snare" ? "S" : "H";
-            if (track === "hat") {
+            cell.textContent = track === "kick" ? "K" : track === "snare" ? "S" : track === "cymbal" ? "C" : "H";
+            if (track === "hat" || track === "cymbal") {
               cell.style.opacity = String(0.35 + event.velocity * 1.8);
             }
           }
@@ -305,6 +307,32 @@
     metal.stop(time + 0.04);
   }
 
+  function playCymbal(time, velocity) {
+    const noise = ctx.createBufferSource();
+    const highpass = ctx.createBiquadFilter();
+    const shelf = ctx.createBiquadFilter();
+    const gain = envGain(time, 0.001 + velocity * 0.38, 0.001, 0.75);
+    noise.buffer = noiseBuffer(0.85);
+    highpass.type = "highpass";
+    highpass.frequency.value = 4200;
+    shelf.type = "highshelf";
+    shelf.frequency.value = 8000;
+    shelf.gain.value = 5;
+    noise.connect(highpass).connect(shelf).connect(gain).connect(masterGain);
+    noise.start(time);
+    noise.stop(time + 0.85);
+
+    [5200, 7100, 9600].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const oscGain = envGain(time, 0.001 + velocity * (0.028 - index * 0.005), 0.001, 0.38);
+      osc.type = "square";
+      osc.frequency.value = freq;
+      osc.connect(oscGain).connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.42);
+    });
+  }
+
   function midiTimestamp(time) {
     if (!ctx) return undefined;
     return window.performance.now() + Math.max(0, time - ctx.currentTime) * 1000;
@@ -316,7 +344,7 @@
     const vel = Math.max(1, Math.min(127, Math.round(velocity * 127)));
     const start = midiTimestamp(time);
     selectedMidiOutput.send([0x99, note, vel], start);
-    selectedMidiOutput.send([0x89, note, 0], start + (track === "hat" ? 45 : 120));
+    selectedMidiOutput.send([0x89, note, 0], start + (track === "hat" ? 45 : track === "cymbal" ? 600 : 120));
   }
 
   function scheduleEvent(track, time, velocity) {
@@ -325,6 +353,7 @@
       if (track === "kick") playKick(time, velocity);
       if (track === "snare") playSnare(time, velocity);
       if (track === "hat") playHat(time, velocity);
+      if (track === "cymbal") playCymbal(time, velocity);
     }
     if ((mode === "midi" || mode === "both") && selectedMidiOutput) {
       sendMidiDrum(track, time, velocity);
@@ -343,7 +372,7 @@
 
   function scheduleStep(barIndex, stepIndex, time) {
     const bar = pattern.bars[barIndex % pattern.bars.length];
-    ["kick", "snare", "hat"].forEach((track) => {
+    tracks.forEach((track) => {
       eventsForTrack(bar, track, pattern)
         .filter((event) => event.step === stepIndex)
         .forEach((event) => scheduleEvent(track, time, event.velocity));
@@ -443,7 +472,7 @@
     if (!p.beats || !p.subdivisions) throw new Error("Pattern needs beats and subdivisions.");
     const total = stepsPerBar(p);
     p.bars.forEach((bar, barIndex) => {
-      ["kick", "snare", "hat"].forEach((track) => {
+      tracks.forEach((track) => {
         const events = eventsForTrack(bar, track, p);
         events.forEach((event) => {
           if (event.step < 0 || event.step >= total) {
@@ -501,11 +530,12 @@
     for (let repeat = 0; repeat < repeats; repeat += 1) {
       const bar = pattern.bars[repeat % pattern.bars.length];
       const barStart = repeat * stepsPerBar(pattern) * stepTicks;
-      ["kick", "snare", "hat"].forEach((track) => {
+      tracks.forEach((track) => {
         const note = pattern.notes[track];
+        if (!note) return;
         eventsForTrack(bar, track, pattern).forEach((event) => {
           const start = barStart + event.step * stepTicks;
-          const dur = track === "hat" ? stepTicks * 0.45 : stepTicks * 0.9;
+          const dur = track === "hat" ? stepTicks * 0.45 : track === "cymbal" ? stepTicks * 3 : stepTicks * 0.9;
           const velocity = Math.max(1, Math.min(127, Math.round(event.velocity * 127)));
           events.push({ tick: start, bytes: [0x99, note, velocity] });
           events.push({ tick: start + dur, bytes: [0x89, note, 0] });

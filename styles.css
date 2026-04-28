@@ -8,6 +8,7 @@
   --kick: #23384f;
   --snare: #b44c43;
   --hat: #d6b64c;
+  --cymbal: #4f9c8a;
   --breath: #d7ece8;
   --play: #0a84ff;
 }
@@ -157,6 +158,7 @@ select {
 .swatch.kick { background: var(--kick); }
 .swatch.snare { background: var(--snare); }
 .swatch.hat { background: var(--hat); }
+.swatch.cymbal { background: var(--cymbal); }
 .swatch.breath { background: var(--breath); border: 1px solid #b7d5d0; }
 
 .grid {
@@ -227,6 +229,11 @@ select {
 .event.hat {
   background: var(--hat);
   color: #241f11;
+}
+
+.event.cymbal {
+  background: var(--cymbal);
+  color: #ffffff;
 }
 
 .breath {
