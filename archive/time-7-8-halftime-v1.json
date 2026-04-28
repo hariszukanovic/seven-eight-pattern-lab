@@ -1,0 +1,47 @@
+{
+  "id": "time-7-8-halftime-v1",
+  "name": "Time 7/8 half-time - 3-group hats",
+  "bpm": 90,
+  "beats": 7,
+  "subdivisions": 4,
+  "ticksPerQuarter": 480,
+  "swing": 0,
+  "notes": {
+    "kick": 36,
+    "snare": 38,
+    "hat": 42
+  },
+  "breathSteps": [10, 11, 12, 13],
+  "bars": [
+    {
+      "name": "A - answer after 3& -> 4",
+      "tracks": {
+        "kick": [
+          { "step": 0, "velocity": 0.95 },
+          { "step": 8, "velocity": 0.74 },
+          { "step": 16, "velocity": 0.82 },
+          { "step": 24, "velocity": 0.88 }
+        ],
+        "snare": [
+          { "step": 15, "velocity": 0.88 }
+        ],
+        "hat": "generated-3s"
+      }
+    },
+    {
+      "name": "B - later half-time weight",
+      "tracks": {
+        "kick": [
+          { "step": 0, "velocity": 0.95 },
+          { "step": 8, "velocity": 0.7 },
+          { "step": 16, "velocity": 0.78 },
+          { "step": 24, "velocity": 0.9 }
+        ],
+        "snare": [
+          { "step": 20, "velocity": 0.9 }
+        ],
+        "hat": "generated-3s"
+      }
+    }
+  ]
+}

@@ -1,0 +1,280 @@
+:root {
+  color-scheme: light;
+  --bg: #f6f4ef;
+  --panel: #fffdf8;
+  --ink: #1d1f24;
+  --muted: #666b73;
+  --line: #d8d3c8;
+  --kick: #23384f;
+  --snare: #b44c43;
+  --hat: #d6b64c;
+  --breath: #d7ece8;
+  --play: #0a84ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.app {
+  width: min(1180px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 18px 0 28px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0 16px;
+}
+
+h1, h2, p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 15px;
+}
+
+.topbar p,
+#status {
+  color: var(--muted);
+  margin-top: 5px;
+  font-size: 13px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--ink);
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: #8d8980;
+}
+
+button.primary,
+#playBtn {
+  background: var(--ink);
+  color: #ffffff;
+  border-color: var(--ink);
+}
+
+.transport,
+.controls,
+.editorHead,
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.controls {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+input[type="number"] {
+  width: 72px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 8px;
+}
+
+input[type="range"] {
+  width: 110px;
+}
+
+select {
+  height: 32px;
+  min-width: 190px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.visualizer {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+.legend {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  margin-right: 5px;
+  vertical-align: -2px;
+}
+
+.swatch.kick { background: var(--kick); }
+.swatch.snare { background: var(--snare); }
+.swatch.hat { background: var(--hat); }
+.swatch.breath { background: var(--breath); border: 1px solid #b7d5d0; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 84px repeat(var(--steps-per-bar, 14), 42px);
+  gap: 3px;
+  align-items: stretch;
+  width: max-content;
+}
+
+.cell {
+  min-height: 30px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  position: relative;
+}
+
+.rowLabel {
+  justify-content: flex-start;
+  padding-left: 8px;
+  color: var(--muted);
+  background: #fbfaf7;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+}
+
+.beatLabel {
+  color: #3b3f45;
+  background: #f2eee6;
+  font-size: 10px;
+}
+
+.barLabel {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  padding-left: 8px;
+  background: #ebe5d8;
+  color: #3b3f45;
+  font-weight: 700;
+}
+
+.event.kick {
+  background: var(--kick);
+  color: #ffffff;
+}
+
+.event.snare {
+  background: var(--snare);
+  color: #ffffff;
+}
+
+.event.hat {
+  background: var(--hat);
+  color: #241f11;
+}
+
+.breath {
+  background: var(--breath);
+}
+
+.now {
+  outline: 3px solid var(--play);
+  outline-offset: -3px;
+}
+
+.event::after {
+  content: attr(data-vel);
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: 8px;
+  opacity: 0.75;
+}
+
+.editor {
+  margin-top: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.editorHead {
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 340px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #111418;
+  color: #f2f2ec;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .app {
+    width: calc(100vw - 20px);
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .grid {
+    grid-template-columns: 74px repeat(var(--steps-per-bar, 14), 36px);
+  }
+}

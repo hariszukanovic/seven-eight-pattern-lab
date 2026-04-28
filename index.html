@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>7/8 Half-Time Pattern Lab</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>7/8 Half-Time Pattern Lab</h1>
+        <p>Pink Floyd Time inspired 7-pulse bar with 16th subdivisions</p>
+      </div>
+      <div class="transport">
+        <button id="playBtn" type="button">Play</button>
+        <button id="stopBtn" type="button">Stop</button>
+        <button id="exportMidiBtn" type="button">Export MIDI</button>
+      </div>
+    </header>
+
+    <section class="controls" aria-label="Pattern controls">
+      <label>
+        BPM
+        <input id="bpmInput" type="number" min="40" max="220" step="1">
+      </label>
+      <label>
+        Loop bars
+        <input id="loopBarsInput" type="number" min="1" max="32" step="1" value="8">
+      </label>
+      <label>
+        Master
+        <input id="masterInput" type="range" min="0" max="1" step="0.01" value="0.85">
+      </label>
+      <label>
+        Sound
+        <select id="soundModeSelect">
+          <option value="audio">Web Audio drums</option>
+          <option value="midi">Web MIDI output</option>
+          <option value="both">Both</option>
+        </select>
+      </label>
+      <label>
+        MIDI out
+        <select id="midiOutputSelect">
+          <option value="">No MIDI output</option>
+        </select>
+      </label>
+      <button id="refreshMidiBtn" type="button">Refresh MIDI</button>
+      <label>
+        Archive
+        <select id="archiveSelect">
+          <option value="">Saved versions</option>
+        </select>
+      </label>
+      <button id="saveVersionBtn" type="button">Save Version</button>
+      <button id="downloadPatternBtn" type="button">Download JSON</button>
+    </section>
+
+    <section class="visualizer" aria-label="Pattern visualizer">
+      <div class="legend">
+        <span><b class="swatch kick"></b>Kick</span>
+        <span><b class="swatch snare"></b>Snare</span>
+        <span><b class="swatch hat"></b>Sparse hat</span>
+        <span><b class="swatch breath"></b>3& -> 4 breath</span>
+      </div>
+      <div id="grid" class="grid"></div>
+    </section>
+
+    <section class="editor" aria-label="Pattern editor">
+      <div class="editorHead">
+        <h2>Pattern data</h2>
+        <div>
+          <button id="formatBtn" type="button">Format</button>
+          <button id="applyBtn" type="button">Apply Changes</button>
+        </div>
+      </div>
+      <textarea id="patternEditor" spellcheck="false"></textarea>
+      <p id="status" role="status"></p>
+    </section>
+  </main>
+
+  <script src="patterns.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
