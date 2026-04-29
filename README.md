@@ -56,7 +56,8 @@ Good versions can be kept in two ways:
 - Use `Download Version` and place the downloaded file in `archive/`.
 
 Click any kick, snare, hat, or cymbal cell in the grid to toggle that note on or off. Drag an active note left/right to push or delay its timing, and drag up/down to change velocity. Playback keeps running while you edit.
-For bass notes, drag the value boxes inside a cell: pitch moves vertically, length moves horizontally, nudge moves horizontally, and velocity moves vertically.
+For bass notes, the block width shows note length and the left edge shifts with timing nudge. Length is shown in eighth-note units, so `1 eighth` equals two 16th-grid steps in the default 7/8 pattern. Drag pitch vertically, drag length or the block's right edge horizontally, drag nudge horizontally, and drag velocity vertically.
+Use each row's mute button to audition tracks without changing the saved pattern data.
 Use `Add Bar` to duplicate the last bar and start shaping a variation. Use `Remove Bar` to drop the last bar; the app always keeps at least one bar.
 
 `Export MIDI` creates bass on MIDI channel 1 and General MIDI drums on channel 10.

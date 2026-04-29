@@ -173,13 +173,38 @@ select {
 }
 
 .rowLabel {
-  justify-content: flex-start;
-  padding-left: 8px;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 6px 5px 8px;
   color: var(--muted);
   background: #fbfaf7;
   position: sticky;
   left: 0;
   z-index: 3;
+}
+
+.trackName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.muteButton {
+  width: 34px;
+  height: 24px;
+  padding: 0;
+  border-radius: 4px;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.muteButton[aria-pressed="true"] {
+  background: #2c2f35;
+  border-color: #2c2f35;
+  color: #ffffff;
+}
+
+.mutedTrack {
+  opacity: 0.42;
 }
 
 .beatLabel {
@@ -213,11 +238,12 @@ select {
 }
 
 .event.bass {
-  background: var(--bass);
+  background: transparent;
   color: #ffffff;
-  flex-direction: column;
-  gap: 3px;
-  padding: 4px;
+  justify-content: flex-start;
+  overflow: visible;
+  padding: 0;
+  z-index: 4;
 }
 
 .event.kick {
@@ -252,7 +278,7 @@ select {
 }
 
 .event.bass.editing {
-  outline-color: #f8f4d9;
+  outline: none;
 }
 
 .breath {
@@ -287,6 +313,34 @@ select {
   content: none;
 }
 
+.melodyBlock {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  min-width: 30px;
+  max-width: calc(var(--steps-per-bar, 14) * 100%);
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 5px;
+  background: linear-gradient(180deg, #5b4dac 0%, var(--bass) 100%);
+  box-shadow: 0 6px 12px rgba(29, 31, 36, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+  padding: 5px 14px 5px 5px;
+}
+
+.event.bass.editing .melodyBlock {
+  outline: 3px solid #f8f4d9;
+  outline-offset: -3px;
+}
+
+.melodyDetails {
+  display: grid;
+  grid-template-columns: minmax(36px, 1fr) minmax(32px, 0.8fr) minmax(30px, 0.7fr);
+  gap: 3px;
+}
+
 .valueControl {
   width: 100%;
   min-height: 15px;
@@ -313,6 +367,28 @@ select {
 
 .event.bass .velocityValue {
   font-size: 9px;
+}
+
+.durationHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 11px;
+  border-left: 1px solid rgba(255, 255, 255, 0.45);
+  cursor: ew-resize;
+}
+
+.durationHandle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  width: 2px;
+  height: 22px;
+  border-left: 1px solid rgba(255, 255, 255, 0.72);
+  border-right: 1px solid rgba(255, 255, 255, 0.72);
+  transform: translateY(-50%);
 }
 
 .noteTooltip {

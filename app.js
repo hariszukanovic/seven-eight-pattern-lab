@@ -22,8 +22,10 @@
   };
 
   const archiveKey = "sevenEightPatternArchive";
+  const gridGapPx = 4;
   const tracks = ["bass", "kick", "snare", "hat", "cymbal"];
   let pattern = clone(window.PatternArchive.current);
+  let mutedTracks = Object.fromEntries(tracks.map((track) => [track, false]));
   let ctx = null;
   let masterGain = null;
   let playing = false;
@@ -116,7 +118,8 @@
   }
 
   function durationText(event) {
-    return "len " + formatSteps(event.durationSteps || 1);
+    const notes = (event.durationSteps || pattern.subdivisions) / pattern.subdivisions;
+    return formatSteps(notes) + " eighth" + (Math.abs(notes - 1) < 0.005 ? "" : "s");
   }
 
   function formatSteps(value) {
@@ -201,7 +204,7 @@
     const event = { step, velocity: defaultVelocity(track), nudgeSteps: 0 };
     if (track === "bass") {
       event.note = defaultBassNote();
-      event.durationSteps = 1;
+      event.durationSteps = pattern.subdivisions;
     }
     return event;
   }
@@ -232,6 +235,15 @@
     if (tooltip) tooltip.classList.remove("visible");
   }
 
+  function melodyGeometry(event) {
+    const duration = Math.max(0.25, event.durationSteps || pattern.subdivisions);
+    const nudge = event.nudgeSteps || 0;
+    return {
+      left: "calc(" + (nudge * 100).toFixed(3) + "% + " + (nudge * gridGapPx).toFixed(3) + "px)",
+      width: "calc(" + (duration * 100).toFixed(3) + "% + " + (Math.max(0, duration - 1) * gridGapPx).toFixed(3) + "px)"
+    };
+  }
+
   function updateEventCell(cell, track, event) {
     const label = track === "kick" ? "K" : track === "snare" ? "S" : track === "cymbal" ? "C" : track === "bass" ? noteName(event.note || defaultBassNote()) : "H";
     cell.classList.add("event", track);
@@ -243,10 +255,19 @@
     }
     cell.textContent = "";
     if (track === "bass") {
+      const geometry = melodyGeometry(event);
+      const block = document.createElement("div");
+      block.className = "melodyBlock";
+      block.style.left = geometry.left;
+      block.style.width = geometry.width;
+
       const pitch = document.createElement("span");
       pitch.className = "valueControl pitchValue";
       pitch.dataset.dimension = "pitch";
       pitch.textContent = label;
+
+      const details = document.createElement("span");
+      details.className = "melodyDetails";
 
       const duration = document.createElement("span");
       duration.className = "valueControl durationValue";
@@ -263,7 +284,14 @@
       velocity.dataset.dimension = "velocity";
       velocity.textContent = velocityText(event) + "%";
 
-      cell.append(pitch, duration, nudge, velocity);
+      const resize = document.createElement("span");
+      resize.className = "durationHandle";
+      resize.dataset.dimension = "duration";
+      resize.title = "Drag length";
+
+      details.append(duration, nudge, velocity);
+      block.append(pitch, details, resize);
+      cell.append(block);
     } else {
       cell.textContent = label;
     }
@@ -274,6 +302,8 @@
   }
 
   function handleGridPointerDown(event) {
+    if (event.target.closest("[data-mute-track]")) return;
+
     const cell = event.target.closest("[data-track][data-step]");
     if (!cell || !els.grid.contains(cell)) return;
 
@@ -297,10 +327,11 @@
       step,
       track,
       note,
-      originalDuration: note ? note.durationSteps || 1 : 1,
+      originalDuration: note ? note.durationSteps || pattern.subdivisions : pattern.subdivisions,
       originalNote: note ? note.note || defaultBassNote() : defaultBassNote(),
       originalNudge: note ? note.nudgeSteps || 0 : 0,
-      originalVelocity: note ? note.velocity : 0
+      originalVelocity: note ? note.velocity : 0,
+      stepWidth: cell.getBoundingClientRect().width + gridGapPx
     };
 
     if (note) {
@@ -316,19 +347,20 @@
 
     const dx = event.clientX - gridPointer.startX;
     const dy = event.clientY - gridPointer.startY;
+    const stepDelta = dx / Math.max(1, gridPointer.stepWidth);
     if (!gridPointer.dragged && Math.hypot(dx, dy) < 4) return;
 
     gridPointer.dragged = true;
     if (gridPointer.dimension === "pitch") {
       gridPointer.note.note = Math.round(clamp(gridPointer.originalNote - dy / 12, 24, 60));
     } else if (gridPointer.dimension === "duration") {
-      gridPointer.note.durationSteps = Math.round(clamp(gridPointer.originalDuration + dx / 38, 0.25, stepsPerBar(pattern)) * 4) / 4;
+      gridPointer.note.durationSteps = Math.round(clamp(gridPointer.originalDuration + stepDelta, 0.25, stepsPerBar(pattern)) * 4) / 4;
     } else if (gridPointer.dimension === "nudge") {
-      gridPointer.note.nudgeSteps = clamp(gridPointer.originalNudge + dx / 95, -0.45, 0.45);
+      gridPointer.note.nudgeSteps = clamp(gridPointer.originalNudge + stepDelta, -0.95, 0.95);
     } else if (gridPointer.dimension === "velocity") {
       gridPointer.note.velocity = clamp(gridPointer.originalVelocity - dy / 120, 0.03, 1);
     } else {
-      gridPointer.note.nudgeSteps = clamp(gridPointer.originalNudge + dx / 95, -0.45, 0.45);
+      gridPointer.note.nudgeSteps = clamp(gridPointer.originalNudge + stepDelta, -0.95, 0.95);
       gridPointer.note.velocity = clamp(gridPointer.originalVelocity - dy / 120, 0.03, 1);
     }
     updateEventCell(gridPointer.cell, gridPointer.track, gridPointer.note);
@@ -429,6 +461,12 @@
     els.bpm.value = pattern.bpm;
   }
 
+  function toggleMute(track) {
+    mutedTracks[track] = !mutedTracks[track];
+    renderGrid();
+    setStatus((mutedTracks[track] ? "Muted " : "Unmuted ") + track + " for playback.");
+  }
+
   function renderArchiveSelect() {
     const saved = readArchive();
     els.archiveSelect.innerHTML = '<option value="">Saved versions</option>';
@@ -467,8 +505,21 @@
 
       tracks.forEach((track) => {
         const rowLabel = document.createElement("div");
-        rowLabel.className = "cell rowLabel";
-        rowLabel.textContent = track;
+        rowLabel.className = "cell rowLabel" + (mutedTracks[track] ? " mutedTrack" : "");
+        const trackName = document.createElement("span");
+        trackName.className = "trackName";
+        trackName.textContent = track;
+        const mute = document.createElement("button");
+        mute.className = "muteButton";
+        mute.type = "button";
+        mute.dataset.muteTrack = track;
+        mute.setAttribute("aria-pressed", String(mutedTracks[track]));
+        mute.textContent = mutedTracks[track] ? "Off" : "On";
+        mute.addEventListener("click", (event) => {
+          event.stopPropagation();
+          toggleMute(track);
+        });
+        rowLabel.append(trackName, mute);
         els.grid.appendChild(rowLabel);
 
         const events = new Map();
@@ -480,6 +531,7 @@
           const event = events.get(i);
           const cell = document.createElement("div");
           cell.className = "cell" + (breath.has(i) ? " breath" : "");
+          if (mutedTracks[track]) cell.classList.add("mutedTrack");
 
           if (event) {
             updateEventCell(cell, track, event);
@@ -617,34 +669,65 @@
 
   function playBass(time, velocity, event) {
     const note = event.note || defaultBassNote();
-    const duration = Math.max(0.12, (event.durationSteps || 1.4) * secondsPerStep(pattern));
+    const duration = Math.max(0.12, (event.durationSteps || pattern.subdivisions) * secondsPerStep(pattern));
     const frequency = noteFrequency(note);
 
     const filter = ctx.createBiquadFilter();
     filter.type = "lowpass";
-    filter.frequency.setValueAtTime(920, time);
-    filter.frequency.exponentialRampToValueAtTime(260, time + Math.min(duration, 0.32));
-    filter.Q.value = 3.8;
+    filter.frequency.setValueAtTime(1400 + velocity * 850, time);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(170, frequency * 3.1), time + Math.min(duration * 0.62, 0.38));
+    filter.Q.value = 2.4;
+
+    const drive = ctx.createWaveShaper();
+    const curve = new Float32Array(1024);
+    for (let i = 0; i < curve.length; i += 1) {
+      const x = (i / (curve.length - 1)) * 2 - 1;
+      curve[i] = Math.tanh(x * 2.6);
+    }
+    drive.curve = curve;
+    drive.oversample = "2x";
 
     const amp = ctx.createGain();
     amp.gain.setValueAtTime(0.001, time);
-    amp.gain.linearRampToValueAtTime(0.001 + velocity * 0.42, time + 0.012);
+    amp.gain.linearRampToValueAtTime(0.001 + velocity * 0.34, time + 0.008);
+    amp.gain.exponentialRampToValueAtTime(0.001 + velocity * 0.18, time + Math.min(duration * 0.35, 0.16));
     amp.gain.exponentialRampToValueAtTime(0.001, time + duration);
 
     const body = ctx.createOscillator();
-    body.type = "sawtooth";
+    body.type = "triangle";
     body.frequency.setValueAtTime(frequency, time);
-    body.connect(filter).connect(amp).connect(masterGain);
+    body.connect(filter).connect(drive).connect(amp).connect(masterGain);
     body.start(time);
     body.stop(time + duration + 0.03);
 
+    const growl = ctx.createOscillator();
+    const growlGain = ctx.createGain();
+    growl.type = "sawtooth";
+    growl.frequency.setValueAtTime(frequency, time);
+    growl.detune.setValueAtTime(-7, time);
+    growlGain.gain.setValueAtTime(0.001 + velocity * 0.09, time);
+    growl.connect(growlGain).connect(filter);
+    growl.start(time);
+    growl.stop(time + duration + 0.03);
+
     const sub = ctx.createOscillator();
-    const subGain = envGain(time, 0.001 + velocity * 0.18, 0.001, duration, "linear");
+    const subGain = envGain(time, 0.001 + velocity * 0.11, 0.001, duration, "linear");
     sub.type = "sine";
     sub.frequency.setValueAtTime(frequency / 2, time);
     sub.connect(subGain).connect(masterGain);
     sub.start(time);
     sub.stop(time + duration + 0.03);
+
+    const finger = ctx.createBufferSource();
+    const fingerFilter = ctx.createBiquadFilter();
+    const fingerGain = envGain(time, 0.001 + velocity * 0.055, 0.001, 0.028);
+    finger.buffer = noiseBuffer(0.035);
+    fingerFilter.type = "bandpass";
+    fingerFilter.frequency.value = 1150;
+    fingerFilter.Q.value = 0.8;
+    finger.connect(fingerFilter).connect(fingerGain).connect(masterGain);
+    finger.start(time);
+    finger.stop(time + 0.04);
   }
 
   function midiTimestamp(time) {
@@ -659,7 +742,7 @@
     const start = midiTimestamp(time);
     const channelOn = track === "bass" ? 0x90 : 0x99;
     const channelOff = track === "bass" ? 0x80 : 0x89;
-    const duration = track === "bass" ? Math.max(80, (event.durationSteps || 1.4) * secondsPerStep(pattern) * 1000) : track === "hat" ? 45 : track === "cymbal" ? 600 : 120;
+    const duration = track === "bass" ? Math.max(80, (event.durationSteps || pattern.subdivisions) * secondsPerStep(pattern) * 1000) : track === "hat" ? 45 : track === "cymbal" ? 600 : 120;
     selectedMidiOutput.send([channelOn, note, vel], start);
     selectedMidiOutput.send([channelOff, note, 0], start + duration);
   }
@@ -691,6 +774,7 @@
   function scheduleStep(barIndex, stepIndex, time, cycle) {
     const bar = pattern.bars[barIndex % pattern.bars.length];
     tracks.forEach((track) => {
+      if (mutedTracks[track]) return;
       eventsForTrack(bar, track, pattern)
         .filter((event) => event.step === stepIndex)
         .forEach((event) => {
@@ -846,7 +930,7 @@
         eventsForTrack(bar, track, pattern).forEach((event) => {
           const offset = grooveOffsetSteps(track, event, pattern, repeat % pattern.bars.length, repeat);
           const start = Math.max(0, barStart + (event.step + offset) * stepTicks);
-          const dur = track === "bass" ? stepTicks * (event.durationSteps || 1.4) : track === "hat" ? stepTicks * 0.45 : track === "cymbal" ? stepTicks * 3 : stepTicks * 0.9;
+          const dur = track === "bass" ? stepTicks * (event.durationSteps || pattern.subdivisions) : track === "hat" ? stepTicks * 0.45 : track === "cymbal" ? stepTicks * 3 : stepTicks * 0.9;
           const velocity = Math.max(1, Math.min(127, Math.round(groovedVelocity(track, event, pattern, repeat % pattern.bars.length, repeat) * 127)));
           const eventNote = track === "bass" ? event.note || note : note;
           events.push({ tick: start, bytes: [track === "bass" ? 0x90 : 0x99, eventNote, velocity] });
@@ -956,5 +1040,5 @@
   renderArchiveSelect();
   syncControls();
   renderGrid();
-  setStatus("Ready. Click notes on/off. Drag drums sideways for timing and vertically for velocity. Bass value boxes edit pitch, length, nudge, and velocity.");
+  setStatus("Ready. Click notes on/off. Drag drums sideways for timing and vertically for velocity. Bass blocks show length and nudge; drag the right edge for length.");
 })();
