@@ -35,6 +35,8 @@
   let stepCells = [];
   let midiAccess = null;
   let selectedMidiOutput = null;
+  let gridPointer = null;
+  let tooltip = null;
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -81,6 +83,17 @@
     return Math.round(v * 100);
   }
 
+  function nudgeText(event) {
+    const nudge = event.nudgeSteps || 0;
+    if (Math.abs(nudge) < 0.005) return "0ms";
+    const ms = Math.round(nudge * secondsPerStep(pattern) * 1000);
+    return (ms > 0 ? "+" : "") + ms + "ms";
+  }
+
+  function noteDescription(track, event) {
+    return track + " velocity " + velocityText(event.velocity) + "%, nudge " + nudgeText(event);
+  }
+
   function defaultVelocity(track) {
     if (track === "kick") return 0.82;
     if (track === "snare") return 0.86;
@@ -108,7 +121,8 @@
   }
 
   function grooveOffsetSteps(track, event, p, barIndex, cycle) {
-    let offset = event.step % p.subdivisions === 1 ? (p.swing || 0) : 0;
+    let offset = event.nudgeSteps || 0;
+    offset += event.step % p.subdivisions === 1 ? (p.swing || 0) : 0;
 
     if (track === "snare") {
       offset += grooveValue(p, "snareLagSteps", 0);
@@ -123,7 +137,7 @@
       offset += stableNoise(track, barIndex, event.step, cycle, "cymbal-time") * grooveValue(p, "cymbalLooseSteps", 0);
     }
 
-    return clamp(offset, -0.2, 0.35);
+    return clamp(offset, -0.6, 0.6);
   }
 
   function groovedVelocity(track, event, p, barIndex, cycle) {
@@ -158,6 +172,122 @@
       bar.tracks[track] = eventsForTrack(bar, track, pattern).map((event) => ({ ...event }));
     }
     return bar.tracks[track];
+  }
+
+  function eventForCell(barIndex, track, step) {
+    const bar = pattern.bars[barIndex];
+    if (!bar) return null;
+    return editableEventsForTrack(bar, track).find((event) => event.step === step) || null;
+  }
+
+  function ensureTooltip() {
+    if (tooltip) return tooltip;
+    tooltip = document.createElement("div");
+    tooltip.className = "noteTooltip";
+    document.body.appendChild(tooltip);
+    return tooltip;
+  }
+
+  function showTooltip(x, y, text) {
+    const tip = ensureTooltip();
+    tip.textContent = text;
+    tip.style.left = x + "px";
+    tip.style.top = y + "px";
+    tip.classList.add("visible");
+  }
+
+  function hideTooltip() {
+    if (tooltip) tooltip.classList.remove("visible");
+  }
+
+  function updateEventCell(cell, track, event) {
+    const label = track === "kick" ? "K" : track === "snare" ? "S" : track === "cymbal" ? "C" : "H";
+    cell.classList.add("event", track);
+    cell.dataset.vel = velocityText(event.velocity);
+    if (Math.abs(event.nudgeSteps || 0) >= 0.005) {
+      cell.dataset.nudge = nudgeText(event);
+    } else {
+      delete cell.dataset.nudge;
+    }
+    cell.textContent = label;
+    cell.title = noteDescription(track, event);
+    if (track === "hat" || track === "cymbal") {
+      cell.style.opacity = String(0.35 + event.velocity * 1.8);
+    }
+  }
+
+  function handleGridPointerDown(event) {
+    const cell = event.target.closest("[data-track][data-step]");
+    if (!cell || !els.grid.contains(cell)) return;
+
+    const barIndex = Number(cell.dataset.bar);
+    const step = Number(cell.dataset.step);
+    const track = cell.dataset.track;
+    const note = eventForCell(barIndex, track, step);
+
+    gridPointer = {
+      barIndex,
+      cell,
+      dragged: false,
+      id: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      step,
+      track,
+      note,
+      originalNudge: note ? note.nudgeSteps || 0 : 0,
+      originalVelocity: note ? note.velocity : 0
+    };
+
+    if (note) {
+      cell.setPointerCapture(event.pointerId);
+      cell.classList.add("editing");
+      showTooltip(event.clientX, event.clientY, noteDescription(track, note));
+      event.preventDefault();
+    }
+  }
+
+  function handleGridPointerMove(event) {
+    if (!gridPointer || !gridPointer.note || event.pointerId !== gridPointer.id) return;
+
+    const dx = event.clientX - gridPointer.startX;
+    const dy = event.clientY - gridPointer.startY;
+    if (!gridPointer.dragged && Math.hypot(dx, dy) < 4) return;
+
+    gridPointer.dragged = true;
+    gridPointer.note.nudgeSteps = clamp(gridPointer.originalNudge + dx / 95, -0.45, 0.45);
+    gridPointer.note.velocity = clamp(gridPointer.originalVelocity - dy / 120, 0.03, 1);
+    updateEventCell(gridPointer.cell, gridPointer.track, gridPointer.note);
+    showTooltip(event.clientX, event.clientY, noteDescription(gridPointer.track, gridPointer.note));
+    setStatus("Shaping " + noteDescription(gridPointer.track, gridPointer.note) + ".");
+    event.preventDefault();
+  }
+
+  function handleGridPointerEnd(event) {
+    if (!gridPointer || event.pointerId !== gridPointer.id) return;
+
+    const pointer = gridPointer;
+    gridPointer = null;
+    hideTooltip();
+
+    if (pointer.note && pointer.dragged) {
+      pointer.cell.classList.remove("editing");
+      if (pointer.cell.hasPointerCapture(event.pointerId)) {
+        pointer.cell.releasePointerCapture(event.pointerId);
+      }
+      renderGrid();
+      setStatus("Set " + noteDescription(pointer.track, pointer.note) + ".");
+      event.preventDefault();
+      return;
+    }
+
+    if (pointer.note) {
+      pointer.cell.classList.remove("editing");
+      if (pointer.cell.hasPointerCapture(event.pointerId)) {
+        pointer.cell.releasePointerCapture(event.pointerId);
+      }
+    }
+    toggleEvent(pointer.barIndex, pointer.track, pointer.step);
   }
 
   function toggleEvent(barIndex, track, step) {
@@ -273,12 +403,7 @@
           cell.className = "cell" + (breath.has(i) ? " breath" : "");
 
           if (event) {
-            cell.classList.add("event", track);
-            cell.dataset.vel = velocityText(event.velocity);
-            cell.textContent = track === "kick" ? "K" : track === "snare" ? "S" : track === "cymbal" ? "C" : "H";
-            if (track === "hat" || track === "cymbal") {
-              cell.style.opacity = String(0.35 + event.velocity * 1.8);
-            }
+            updateEventCell(cell, track, event);
           }
 
           cell.dataset.bar = String(barIndex);
@@ -684,11 +809,10 @@
   els.exportMidi.addEventListener("click", exportMidi);
   els.addBar.addEventListener("click", addBar);
   els.removeBar.addEventListener("click", removeBar);
-  els.grid.addEventListener("click", (event) => {
-    const cell = event.target.closest("[data-track][data-step]");
-    if (!cell || !els.grid.contains(cell)) return;
-    toggleEvent(Number(cell.dataset.bar), cell.dataset.track, Number(cell.dataset.step));
-  });
+  els.grid.addEventListener("pointerdown", handleGridPointerDown);
+  els.grid.addEventListener("pointermove", handleGridPointerMove);
+  els.grid.addEventListener("pointerup", handleGridPointerEnd);
+  els.grid.addEventListener("pointercancel", handleGridPointerEnd);
   els.refreshMidi.addEventListener("click", refreshMidiOutputs);
   els.midiOutput.addEventListener("change", () => {
     if (!midiAccess) return;
@@ -716,5 +840,5 @@
   renderArchiveSelect();
   syncControls();
   renderGrid();
-  setStatus("Ready. Click grid cells while it plays, then save good versions to the archive.");
+  setStatus("Ready. Click notes on/off. Drag active notes sideways for timing and vertically for velocity.");
 })();

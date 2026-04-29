@@ -184,6 +184,7 @@ select {
 
 .cell[data-track] {
   cursor: pointer;
+  user-select: none;
 }
 
 .cell[data-track]:hover {
@@ -236,6 +237,17 @@ select {
   color: #ffffff;
 }
 
+.event {
+  cursor: grab;
+  touch-action: none;
+}
+
+.event.editing {
+  cursor: grabbing;
+  outline: 3px solid #111418;
+  outline-offset: -3px;
+}
+
 .breath {
   background: var(--breath);
 }
@@ -252,6 +264,35 @@ select {
   right: 3px;
   font-size: 8px;
   opacity: 0.75;
+}
+
+.event[data-nudge]::before {
+  content: attr(data-nudge);
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  font-size: 8px;
+  opacity: 0.78;
+}
+
+.noteTooltip {
+  position: fixed;
+  z-index: 20;
+  transform: translate(10px, -115%);
+  pointer-events: none;
+  background: #111418;
+  color: #ffffff;
+  border-radius: 4px;
+  padding: 5px 7px;
+  font-size: 11px;
+  line-height: 1.2;
+  opacity: 0;
+  transition: opacity 90ms ease;
+  white-space: nowrap;
+}
+
+.noteTooltip.visible {
+  opacity: 0.96;
 }
 
 @media (max-width: 760px) {

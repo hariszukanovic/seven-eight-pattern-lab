@@ -14,6 +14,8 @@ The musical material lives in `patterns.js`. For most future changes, edit:
 - `bars[].tracks.snare`
 - `bars[].tracks.hat`
 - `bars[].tracks.cymbal`
+- `bars[].tracks.*[].velocity`
+- `bars[].tracks.*[].nudgeSteps`
 - `notes` if you want different General MIDI drum notes
 
 The current pattern uses a true 7/8 bar: 7 eighth-note pulses, each split into two 16ths.
@@ -50,7 +52,7 @@ Good versions can be kept in two ways:
 - Use `Save Version` in the app. This stores versions in the browser's local storage.
 - Use `Download Version` and place the downloaded file in `archive/`.
 
-Click any kick, snare, hat, or cymbal cell in the grid to toggle that note on or off. Playback keeps running while you edit.
+Click any kick, snare, hat, or cymbal cell in the grid to toggle that note on or off. Drag an active note left/right to push or delay its timing, and drag up/down to change velocity. Playback keeps running while you edit.
 Use `Add Bar` to duplicate the last bar and start shaping a variation. Use `Remove Bar` to drop the last bar; the app always keeps at least one bar.
 
 `Export MIDI` creates a General MIDI drum file using channel 10.
