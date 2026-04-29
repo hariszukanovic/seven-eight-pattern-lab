@@ -11,11 +11,14 @@ The musical material lives in `patterns.js`. For most future changes, edit:
 - `groove`
 - `breathSteps`
 - `bars[].tracks.kick`
+- `bars[].tracks.bass`
 - `bars[].tracks.snare`
 - `bars[].tracks.hat`
 - `bars[].tracks.cymbal`
 - `bars[].tracks.*[].velocity`
 - `bars[].tracks.*[].nudgeSteps`
+- `bars[].tracks.bass[].note`
+- `bars[].tracks.bass[].durationSteps`
 - `notes` if you want different General MIDI drum notes
 
 The current pattern uses a true 7/8 bar: 7 eighth-note pulses, each split into two 16ths.

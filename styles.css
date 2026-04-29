@@ -5,6 +5,7 @@
   --ink: #1d1f24;
   --muted: #666b73;
   --line: #d8d3c8;
+  --bass: #4b3d8f;
   --kick: #23384f;
   --snare: #b44c43;
   --hat: #d6b64c;
@@ -25,7 +26,7 @@ body {
 }
 
 .app {
-  width: min(1360px, calc(100vw - 24px));
+  width: calc(100vw - 16px);
   margin: 0 auto;
   padding: 18px 0 28px;
 }
@@ -156,6 +157,7 @@ select {
 }
 
 .swatch.kick { background: var(--kick); }
+.swatch.bass { background: var(--bass); }
 .swatch.snare { background: var(--snare); }
 .swatch.hat { background: var(--hat); }
 .swatch.cymbal { background: var(--cymbal); }
@@ -163,14 +165,15 @@ select {
 
 .grid {
   display: grid;
-  grid-template-columns: 96px repeat(var(--steps-per-bar, 14), 48px);
-  gap: 3px;
+  grid-template-columns: minmax(96px, 116px) repeat(var(--steps-per-bar, 14), minmax(54px, 1fr));
+  gap: 4px;
   align-items: stretch;
-  width: max-content;
+  width: 100%;
+  min-width: 820px;
 }
 
 .cell {
-  min-height: 30px;
+  min-height: 56px;
   border: 1px solid var(--line);
   background: #ffffff;
   border-radius: 4px;
@@ -206,6 +209,16 @@ select {
   color: #3b3f45;
   background: #f2eee6;
   font-size: 10px;
+  min-height: 34px;
+}
+
+.rowLabel {
+  min-height: 56px;
+}
+
+.event.bass {
+  background: var(--bass);
+  color: #ffffff;
 }
 
 .barLabel {
@@ -306,6 +319,7 @@ select {
   }
 
   .grid {
-    grid-template-columns: 74px repeat(var(--steps-per-bar, 14), 36px);
+    grid-template-columns: 84px repeat(var(--steps-per-bar, 14), minmax(44px, 1fr));
+    min-width: 700px;
   }
 }

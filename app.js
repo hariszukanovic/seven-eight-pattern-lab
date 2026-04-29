@@ -22,7 +22,7 @@
   };
 
   const archiveKey = "sevenEightPatternArchive";
-  const tracks = ["kick", "snare", "hat", "cymbal"];
+  const tracks = ["bass", "kick", "snare", "hat", "cymbal"];
   let pattern = clone(window.PatternArchive.current);
   let ctx = null;
   let masterGain = null;
@@ -91,7 +91,8 @@
   }
 
   function noteDescription(track, event) {
-    return track + " velocity " + velocityText(event.velocity) + "%, nudge " + nudgeText(event);
+    const pitch = track === "bass" ? " " + noteName(event.note || defaultBassNote()) : "";
+    return track + pitch + " velocity " + velocityText(event.velocity) + "%, nudge " + nudgeText(event);
   }
 
   function defaultVelocity(track) {
@@ -99,7 +100,22 @@
     if (track === "snare") return 0.86;
     if (track === "hat") return 0.26;
     if (track === "cymbal") return 0.72;
+    if (track === "bass") return 0.68;
     return 0.75;
+  }
+
+  function defaultBassNote() {
+    return pattern.notes && pattern.notes.bass ? pattern.notes.bass : 35;
+  }
+
+  function noteFrequency(note) {
+    return 440 * Math.pow(2, (note - 69) / 12);
+  }
+
+  function noteName(note) {
+    const names = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+    const octave = Math.floor(note / 12) - 1;
+    return names[note % 12] + octave;
   }
 
   function clamp(value, min, max) {
@@ -124,7 +140,9 @@
     let offset = event.nudgeSteps || 0;
     offset += event.step % p.subdivisions === 1 ? (p.swing || 0) : 0;
 
-    if (track === "snare") {
+    if (track === "bass") {
+      offset += stableNoise(track, barIndex, event.step, cycle, "bass-time") * grooveValue(p, "bassLooseSteps", 0);
+    } else if (track === "snare") {
       offset += grooveValue(p, "snareLagSteps", 0);
     } else if (track === "hat") {
       offset += stableNoise(track, barIndex, event.step, cycle, "hat-time") * grooveValue(p, "hatLooseSteps", 0);
@@ -142,7 +160,7 @@
 
   function groovedVelocity(track, event, p, barIndex, cycle) {
     const amount = grooveValue(p, "velocityHumanize", 0);
-    const trackAmount = track === "hat" ? amount * 1.45 : track === "snare" ? amount * 0.75 : amount;
+    const trackAmount = track === "hat" ? amount * 1.45 : track === "snare" ? amount * 0.75 : track === "bass" ? amount * 0.6 : amount;
     return clamp(event.velocity + stableNoise(track, barIndex, event.step, cycle, "velocity") * trackAmount, 0.02, 1);
   }
 
@@ -174,6 +192,15 @@
     return bar.tracks[track];
   }
 
+  function defaultEvent(track, step) {
+    const event = { step, velocity: defaultVelocity(track) };
+    if (track === "bass") {
+      event.note = defaultBassNote();
+      event.durationSteps = 1.6;
+    }
+    return event;
+  }
+
   function eventForCell(barIndex, track, step) {
     const bar = pattern.bars[barIndex];
     if (!bar) return null;
@@ -201,7 +228,7 @@
   }
 
   function updateEventCell(cell, track, event) {
-    const label = track === "kick" ? "K" : track === "snare" ? "S" : track === "cymbal" ? "C" : "H";
+    const label = track === "kick" ? "K" : track === "snare" ? "S" : track === "cymbal" ? "C" : track === "bass" ? noteName(event.note || defaultBassNote()) : "H";
     cell.classList.add("event", track);
     cell.dataset.vel = velocityText(event.velocity);
     if (Math.abs(event.nudgeSteps || 0) >= 0.005) {
@@ -211,7 +238,7 @@
     }
     cell.textContent = label;
     cell.title = noteDescription(track, event);
-    if (track === "hat" || track === "cymbal") {
+    if (track === "hat" || track === "cymbal" || track === "bass") {
       cell.style.opacity = String(0.35 + event.velocity * 1.8);
     }
   }
@@ -300,7 +327,7 @@
       events.splice(existingIndex, 1);
       setStatus("Removed " + track + " at " + labelsFor(pattern)[step] + ".");
     } else {
-      events.push({ step, velocity: defaultVelocity(track) });
+      events.push(defaultEvent(track, step));
       events.sort((a, b) => a.step - b.step);
       setStatus("Added " + track + " at " + labelsFor(pattern)[step] + ".");
     }
@@ -536,30 +563,66 @@
     });
   }
 
+  function playBass(time, velocity, event) {
+    const note = event.note || defaultBassNote();
+    const duration = Math.max(0.12, (event.durationSteps || 1.4) * secondsPerStep(pattern));
+    const frequency = noteFrequency(note);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(920, time);
+    filter.frequency.exponentialRampToValueAtTime(260, time + Math.min(duration, 0.32));
+    filter.Q.value = 3.8;
+
+    const amp = ctx.createGain();
+    amp.gain.setValueAtTime(0.001, time);
+    amp.gain.linearRampToValueAtTime(0.001 + velocity * 0.42, time + 0.012);
+    amp.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+    const body = ctx.createOscillator();
+    body.type = "sawtooth";
+    body.frequency.setValueAtTime(frequency, time);
+    body.connect(filter).connect(amp).connect(masterGain);
+    body.start(time);
+    body.stop(time + duration + 0.03);
+
+    const sub = ctx.createOscillator();
+    const subGain = envGain(time, 0.001 + velocity * 0.18, 0.001, duration, "linear");
+    sub.type = "sine";
+    sub.frequency.setValueAtTime(frequency / 2, time);
+    sub.connect(subGain).connect(masterGain);
+    sub.start(time);
+    sub.stop(time + duration + 0.03);
+  }
+
   function midiTimestamp(time) {
     if (!ctx) return undefined;
     return window.performance.now() + Math.max(0, time - ctx.currentTime) * 1000;
   }
 
-  function sendMidiDrum(track, time, velocity) {
+  function sendMidiEvent(track, time, velocity, event) {
     if (!selectedMidiOutput || !pattern.notes || !pattern.notes[track]) return;
-    const note = pattern.notes[track];
+    const note = track === "bass" ? event.note || pattern.notes.bass : pattern.notes[track];
     const vel = Math.max(1, Math.min(127, Math.round(velocity * 127)));
     const start = midiTimestamp(time);
-    selectedMidiOutput.send([0x99, note, vel], start);
-    selectedMidiOutput.send([0x89, note, 0], start + (track === "hat" ? 45 : track === "cymbal" ? 600 : 120));
+    const channelOn = track === "bass" ? 0x90 : 0x99;
+    const channelOff = track === "bass" ? 0x80 : 0x89;
+    const duration = track === "bass" ? Math.max(80, (event.durationSteps || 1.4) * secondsPerStep(pattern) * 1000) : track === "hat" ? 45 : track === "cymbal" ? 600 : 120;
+    selectedMidiOutput.send([channelOn, note, vel], start);
+    selectedMidiOutput.send([channelOff, note, 0], start + duration);
   }
 
-  function scheduleEvent(track, time, velocity) {
+  function scheduleEvent(track, time, velocity, event) {
     const mode = els.soundMode.value;
     if (mode === "audio" || mode === "both" || !selectedMidiOutput) {
+      if (track === "bass") playBass(time, velocity, event);
       if (track === "kick") playKick(time, velocity);
       if (track === "snare") playSnare(time, velocity);
       if (track === "hat") playHat(time, velocity);
       if (track === "cymbal") playCymbal(time, velocity);
     }
     if ((mode === "midi" || mode === "both") && selectedMidiOutput) {
-      sendMidiDrum(track, time, velocity);
+      sendMidiEvent(track, time, velocity, event);
     }
   }
 
@@ -581,7 +644,7 @@
         .forEach((event) => {
           const eventTime = time + grooveOffsetSteps(track, event, pattern, barIndex, cycle) * secondsPerStep(pattern);
           const velocity = groovedVelocity(track, event, pattern, barIndex, cycle);
-          scheduleEvent(track, eventTime, velocity);
+          scheduleEvent(track, eventTime, velocity, event);
         });
     });
     showStep(barIndex % pattern.bars.length, stepIndex, time);
@@ -726,15 +789,16 @@
       const bar = pattern.bars[repeat % pattern.bars.length];
       const barStart = repeat * stepsPerBar(pattern) * stepTicks;
       tracks.forEach((track) => {
-        const note = pattern.notes[track];
+        const note = track === "bass" ? pattern.notes.bass : pattern.notes[track];
         if (!note) return;
         eventsForTrack(bar, track, pattern).forEach((event) => {
           const offset = grooveOffsetSteps(track, event, pattern, repeat % pattern.bars.length, repeat);
           const start = Math.max(0, barStart + (event.step + offset) * stepTicks);
-          const dur = track === "hat" ? stepTicks * 0.45 : track === "cymbal" ? stepTicks * 3 : stepTicks * 0.9;
+          const dur = track === "bass" ? stepTicks * (event.durationSteps || 1.4) : track === "hat" ? stepTicks * 0.45 : track === "cymbal" ? stepTicks * 3 : stepTicks * 0.9;
           const velocity = Math.max(1, Math.min(127, Math.round(groovedVelocity(track, event, pattern, repeat % pattern.bars.length, repeat) * 127)));
-          events.push({ tick: start, bytes: [0x99, note, velocity] });
-          events.push({ tick: start + dur, bytes: [0x89, note, 0] });
+          const eventNote = track === "bass" ? event.note || note : note;
+          events.push({ tick: start, bytes: [track === "bass" ? 0x90 : 0x99, eventNote, velocity] });
+          events.push({ tick: start + dur, bytes: [track === "bass" ? 0x80 : 0x89, eventNote, 0] });
         });
       });
     }
