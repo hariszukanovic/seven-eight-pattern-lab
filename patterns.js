@@ -1,7 +1,7 @@
 window.PatternArchive = {
   current: {
-    id: "money-originalish-7-pulse-v9-clean-gui-default",
-    name: "Money original-ish 7-pulse - clean edit default",
+    id: "money-b-minor-inspired-v10",
+    name: "B-minor 7-pulse bass sketch",
     bpm: 124,
     beats: 7,
     beatUnit: 8,
@@ -27,16 +27,16 @@ window.PatternArchive = {
     breathSteps: [],
     bars: [
       {
-        name: "A - clean edit frame",
+        name: "A - B-minor bass frame",
         tracks: {
           bass: [
-            { step: 0, note: 35, durationSteps: 2.2, velocity: 1 },
-            { step: 3, note: 35, durationSteps: 0.85, velocity: 1 },
-            { step: 4, note: 38, durationSteps: 1.2, velocity: 1 },
-            { step: 6, note: 40, durationSteps: 1.1, velocity: 1 },
-            { step: 8, note: 42, durationSteps: 1.15, velocity: 1 },
-            { step: 10, note: 45, durationSteps: 0.95, velocity: 1 },
-            { step: 12, note: 47, durationSteps: 1.7, velocity: 1 }
+            { step: 0, note: 35, durationSteps: 2, velocity: 1 },
+            { step: 2, note: 30, durationSteps: 1, velocity: 1 },
+            { step: 4, note: 33, durationSteps: 1, velocity: 1 },
+            { step: 6, note: 35, durationSteps: 1.25, velocity: 1 },
+            { step: 8, note: 38, durationSteps: 1, velocity: 1 },
+            { step: 10, note: 37, durationSteps: 1, velocity: 1 },
+            { step: 12, note: 35, durationSteps: 2, velocity: 1 }
           ],
           kick: [
             { step: 0, velocity: 1 },
