@@ -1,24 +1,24 @@
 window.PatternArchive = {
   current: {
-    id: "money-originalish-7-pulse-v8-bass-swung",
-    name: "Money original-ish 7-pulse - bass swung half-time",
+    id: "money-originalish-7-pulse-v9-clean-gui-default",
+    name: "Money original-ish 7-pulse - clean edit default",
     bpm: 124,
     beats: 7,
     beatUnit: 8,
     subdivisions: 2,
     ticksPerQuarter: 480,
-    swing: 0.08,
+    swing: 0,
     groove: {
-      snareLagSteps: 0.041,
-      bassLooseSteps: 0.012,
-      hatLooseSteps: 0.055,
-      kickLooseSteps: 0.018,
-      cymbalLooseSteps: 0.018,
-      turnaroundPushSteps: -0.025,
-      velocityHumanize: 0.045
+      snareLagSteps: 0,
+      bassLooseSteps: 0,
+      hatLooseSteps: 0,
+      kickLooseSteps: 0,
+      cymbalLooseSteps: 0,
+      turnaroundPushSteps: 0,
+      velocityHumanize: 0
     },
     notes: {
-      bass: 35,
+      bass: 36,
       kick: 36,
       snare: 38,
       hat: 42,
@@ -27,37 +27,40 @@ window.PatternArchive = {
     breathSteps: [],
     bars: [
       {
-        name: "A - half-time from original frame",
+        name: "A - clean edit frame",
         tracks: {
           bass: [
-            { step: 0, note: 35, durationSteps: 2.2, velocity: 0.78, nudgeSteps: -0.017 },
-            { step: 3, note: 35, durationSteps: 0.85, velocity: 0.52, nudgeSteps: -0.033 },
-            { step: 4, note: 38, durationSteps: 1.2, velocity: 0.62, nudgeSteps: 0.021 },
-            { step: 6, note: 40, durationSteps: 1.1, velocity: 0.58, nudgeSteps: 0.033 },
-            { step: 8, note: 42, durationSteps: 1.15, velocity: 0.66, nudgeSteps: -0.017 },
-            { step: 10, note: 45, durationSteps: 0.95, velocity: 0.56, nudgeSteps: 0.041 },
-            { step: 12, note: 47, durationSteps: 1.7, velocity: 0.78, nudgeSteps: -0.033 }
+            { step: 0, note: 35, durationSteps: 2.2, velocity: 1 },
+            { step: 3, note: 35, durationSteps: 0.85, velocity: 1 },
+            { step: 4, note: 38, durationSteps: 1.2, velocity: 1 },
+            { step: 6, note: 40, durationSteps: 1.1, velocity: 1 },
+            { step: 8, note: 42, durationSteps: 1.15, velocity: 1 },
+            { step: 10, note: 45, durationSteps: 0.95, velocity: 1 },
+            { step: 12, note: 47, durationSteps: 1.7, velocity: 1 }
           ],
           kick: [
-            { step: 0, velocity: 0.92, nudgeSteps: -0.017 },
-            { step: 4, velocity: 0.66, nudgeSteps: 0.021 },
-            { step: 8, velocity: 0.7, nudgeSteps: -0.025 },
-            { step: 12, velocity: 0.86, nudgeSteps: -0.033 }
+            { step: 0, velocity: 1 },
+            { step: 4, velocity: 1 },
+            { step: 8, velocity: 1 },
+            { step: 12, velocity: 1 }
           ],
           snare: [
-            { step: 2, velocity: 0.22, nudgeSteps: 0.041 },
-            { step: 6, velocity: 0.9, nudgeSteps: 0.074 },
-            { step: 10, velocity: 0.28, nudgeSteps: 0.058 }
+            { step: 2, velocity: 1 },
+            { step: 6, velocity: 1 },
+            { step: 10, velocity: 1 }
           ],
           hat: [
-            { step: 3, velocity: 0.12, nudgeSteps: -0.025 },
-            { step: 5, velocity: 0.09, nudgeSteps: 0.021 },
-            { step: 9, velocity: 0.13, nudgeSteps: -0.017 },
-            { step: 13, velocity: 0.18, nudgeSteps: 0.033 }
+            { step: 0, velocity: 1 },
+            { step: 2, velocity: 1 },
+            { step: 4, velocity: 1 },
+            { step: 6, velocity: 1 },
+            { step: 8, velocity: 1 },
+            { step: 10, velocity: 1 },
+            { step: 12, velocity: 1 }
           ],
           cymbal: [
-            { step: 0, velocity: 0.72, nudgeSteps: -0.017 },
-            { step: 12, velocity: 0.92, nudgeSteps: -0.05 }
+            { step: 0, velocity: 1 },
+            { step: 12, velocity: 1 }
           ]
         }
       }

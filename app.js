@@ -91,21 +91,18 @@
   }
 
   function noteDescription(track, event) {
-    const pitch = track === "bass" ? " " + noteName(event.note || defaultBassNote()) : "";
-    return track + pitch + " velocity " + velocityText(event.velocity) + "%, nudge " + nudgeText(event);
+    if (track === "bass") {
+      return track + " " + noteName(event.note || defaultBassNote()) + ", duration " + durationText(event) + ", velocity " + velocityText(event.velocity) + "%, nudge " + nudgeText(event);
+    }
+    return track + " velocity " + velocityText(event.velocity) + "%, nudge " + nudgeText(event);
   }
 
   function defaultVelocity(track) {
-    if (track === "kick") return 0.82;
-    if (track === "snare") return 0.86;
-    if (track === "hat") return 0.26;
-    if (track === "cymbal") return 0.72;
-    if (track === "bass") return 0.68;
-    return 0.75;
+    return 1;
   }
 
   function defaultBassNote() {
-    return pattern.notes && pattern.notes.bass ? pattern.notes.bass : 35;
+    return 36;
   }
 
   function noteFrequency(note) {
@@ -116,6 +113,14 @@
     const names = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
     const octave = Math.floor(note / 12) - 1;
     return names[note % 12] + octave;
+  }
+
+  function durationText(event) {
+    return "len " + formatSteps(event.durationSteps || 1);
+  }
+
+  function formatSteps(value) {
+    return Number(value.toFixed(2)).toString();
   }
 
   function clamp(value, min, max) {
@@ -193,10 +198,10 @@
   }
 
   function defaultEvent(track, step) {
-    const event = { step, velocity: defaultVelocity(track) };
+    const event = { step, velocity: defaultVelocity(track), nudgeSteps: 0 };
     if (track === "bass") {
       event.note = defaultBassNote();
-      event.durationSteps = 1.6;
+      event.durationSteps = 1;
     }
     return event;
   }
@@ -236,10 +241,35 @@
     } else {
       delete cell.dataset.nudge;
     }
-    cell.textContent = label;
+    cell.textContent = "";
+    if (track === "bass") {
+      const pitch = document.createElement("span");
+      pitch.className = "valueControl pitchValue";
+      pitch.dataset.dimension = "pitch";
+      pitch.textContent = label;
+
+      const duration = document.createElement("span");
+      duration.className = "valueControl durationValue";
+      duration.dataset.dimension = "duration";
+      duration.textContent = durationText(event);
+
+      const nudge = document.createElement("span");
+      nudge.className = "valueControl nudgeValue";
+      nudge.dataset.dimension = "nudge";
+      nudge.textContent = nudgeText(event);
+
+      const velocity = document.createElement("span");
+      velocity.className = "valueControl velocityValue";
+      velocity.dataset.dimension = "velocity";
+      velocity.textContent = velocityText(event) + "%";
+
+      cell.append(pitch, duration, nudge, velocity);
+    } else {
+      cell.textContent = label;
+    }
     cell.title = noteDescription(track, event);
     if (track === "hat" || track === "cymbal" || track === "bass") {
-      cell.style.opacity = String(0.35 + event.velocity * 1.8);
+      cell.style.opacity = String(Math.min(1, 0.35 + event.velocity * 0.65));
     }
   }
 
@@ -251,10 +281,15 @@
     const step = Number(cell.dataset.step);
     const track = cell.dataset.track;
     const note = eventForCell(barIndex, track, step);
+    const dimensionTarget = event.target.closest("[data-dimension]");
+    const dimension = note && track === "bass" && dimensionTarget && cell.contains(dimensionTarget)
+      ? dimensionTarget.dataset.dimension
+      : "body";
 
     gridPointer = {
       barIndex,
       cell,
+      dimension,
       dragged: false,
       id: event.pointerId,
       startX: event.clientX,
@@ -262,6 +297,8 @@
       step,
       track,
       note,
+      originalDuration: note ? note.durationSteps || 1 : 1,
+      originalNote: note ? note.note || defaultBassNote() : defaultBassNote(),
       originalNudge: note ? note.nudgeSteps || 0 : 0,
       originalVelocity: note ? note.velocity : 0
     };
@@ -282,8 +319,18 @@
     if (!gridPointer.dragged && Math.hypot(dx, dy) < 4) return;
 
     gridPointer.dragged = true;
-    gridPointer.note.nudgeSteps = clamp(gridPointer.originalNudge + dx / 95, -0.45, 0.45);
-    gridPointer.note.velocity = clamp(gridPointer.originalVelocity - dy / 120, 0.03, 1);
+    if (gridPointer.dimension === "pitch") {
+      gridPointer.note.note = Math.round(clamp(gridPointer.originalNote - dy / 12, 24, 60));
+    } else if (gridPointer.dimension === "duration") {
+      gridPointer.note.durationSteps = Math.round(clamp(gridPointer.originalDuration + dx / 38, 0.25, stepsPerBar(pattern)) * 4) / 4;
+    } else if (gridPointer.dimension === "nudge") {
+      gridPointer.note.nudgeSteps = clamp(gridPointer.originalNudge + dx / 95, -0.45, 0.45);
+    } else if (gridPointer.dimension === "velocity") {
+      gridPointer.note.velocity = clamp(gridPointer.originalVelocity - dy / 120, 0.03, 1);
+    } else {
+      gridPointer.note.nudgeSteps = clamp(gridPointer.originalNudge + dx / 95, -0.45, 0.45);
+      gridPointer.note.velocity = clamp(gridPointer.originalVelocity - dy / 120, 0.03, 1);
+    }
     updateEventCell(gridPointer.cell, gridPointer.track, gridPointer.note);
     showTooltip(event.clientX, event.clientY, noteDescription(gridPointer.track, gridPointer.note));
     setStatus("Shaping " + noteDescription(gridPointer.track, gridPointer.note) + ".");
@@ -312,6 +359,11 @@
       pointer.cell.classList.remove("editing");
       if (pointer.cell.hasPointerCapture(event.pointerId)) {
         pointer.cell.releasePointerCapture(event.pointerId);
+      }
+      if (pointer.dimension !== "body") {
+        setStatus("Drag " + pointer.dimension + " to edit " + noteDescription(pointer.track, pointer.note) + ".");
+        event.preventDefault();
+        return;
       }
     }
     toggleEvent(pointer.barIndex, pointer.track, pointer.step);
@@ -395,23 +447,23 @@
     els.grid.style.setProperty("--steps-per-bar", String(stepsPerBar(pattern)));
     stepCells = [];
 
-    const topLeft = document.createElement("div");
-    topLeft.className = "cell rowLabel";
-    topLeft.textContent = "step";
-    els.grid.appendChild(topLeft);
-
-    labels.forEach((label, i) => {
-      const cell = document.createElement("div");
-      cell.className = "cell beatLabel" + (breath.has(i) ? " breath" : "");
-      cell.textContent = label;
-      els.grid.appendChild(cell);
-    });
-
     pattern.bars.forEach((bar, barIndex) => {
       const barLabel = document.createElement("div");
       barLabel.className = "cell barLabel";
       barLabel.textContent = "Bar " + (barIndex + 1) + ": " + bar.name;
       els.grid.appendChild(barLabel);
+
+      const stepSpacer = document.createElement("div");
+      stepSpacer.className = "cell stepSpacer";
+      stepSpacer.setAttribute("aria-hidden", "true");
+      els.grid.appendChild(stepSpacer);
+
+      labels.forEach((label, i) => {
+        const cell = document.createElement("div");
+        cell.className = "cell beatLabel" + (breath.has(i) ? " breath" : "");
+        cell.textContent = label;
+        els.grid.appendChild(cell);
+      });
 
       tracks.forEach((track) => {
         const rowLabel = document.createElement("div");
@@ -904,5 +956,5 @@
   renderArchiveSelect();
   syncControls();
   renderGrid();
-  setStatus("Ready. Click notes on/off. Drag active notes sideways for timing and vertically for velocity.");
+  setStatus("Ready. Click notes on/off. Drag drums sideways for timing and vertically for velocity. Bass value boxes edit pitch, length, nudge, and velocity.");
 })();
